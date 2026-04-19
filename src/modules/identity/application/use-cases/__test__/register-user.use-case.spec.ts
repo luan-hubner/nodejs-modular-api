@@ -1,6 +1,12 @@
 import { RegisterUserUseCase } from '../register-user.use-case'
 import { User } from '../../../domain/entities/user.entity'
 import { UserRepository } from '../../../domain/repositories/user.repository'
+import {
+  IEventBus,
+  EventHandler,
+  DomainEvent,
+} from '../../../../../shared/event-bus'
+import { PasswordHasher } from '../../../domain/password-hasher'
 
 class InMemoryUserRepository implements UserRepository {
   public users: User[] = []
@@ -9,18 +15,47 @@ class InMemoryUserRepository implements UserRepository {
     return this.users.find((u) => u.email === email) ?? null
   }
 
+  async findById(id: string): Promise<User | null> {
+    return this.users.find((u) => u.id === id) ?? null
+  }
+
   async save(user: User): Promise<void> {
     this.users.push(user)
   }
 }
 
+class FakeEventBus implements IEventBus {
+  public events: DomainEvent[] = []
+
+  async publish(event: DomainEvent): Promise<void> {
+    this.events.push(event)
+  }
+
+  subscribe(_eventName: string, _handler: EventHandler): void {}
+  unsubscribe(_eventName: string, _handler: EventHandler): void {}
+}
+
+class FakePasswordHasher implements PasswordHasher {
+  async hash(password: string): Promise<string> {
+    return `hashed:${password}`
+  }
+
+  async verify(password: string, hash: string): Promise<boolean> {
+    return hash === `hashed:${password}`
+  }
+}
+
 describe('RegisterUserUseCase', () => {
   let repository: InMemoryUserRepository
+  let eventBus: FakeEventBus
+  let passwordHasher: FakePasswordHasher
   let sut: RegisterUserUseCase
 
   beforeEach(() => {
     repository = new InMemoryUserRepository()
-    sut = new RegisterUserUseCase(repository)
+    eventBus = new FakeEventBus()
+    passwordHasher = new FakePasswordHasher()
+    sut = new RegisterUserUseCase(repository, eventBus, passwordHasher)
   })
 
   it('should register a new user', async () => {
