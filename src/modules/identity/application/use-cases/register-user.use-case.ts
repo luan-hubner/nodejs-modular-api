@@ -2,6 +2,7 @@ import type { IEventBus } from '../../../../shared/event-bus'
 import { User } from '../../domain/entities/user.entity'
 import { UserRegisteredEvent } from '../../domain/events/user-registered.event'
 import { UserRepository } from '../../domain/repositories/user.repository'
+import type { PasswordHasher } from '../../domain/password-hasher'
 
 interface RegisterUserInput {
   name: string
@@ -17,6 +18,7 @@ export class RegisterUserUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly eventBus: IEventBus,
+    private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute({
@@ -30,7 +32,11 @@ export class RegisterUserUseCase {
       throw new Error('Email already in use')
     }
 
-    const user = User.create({ name, email, password })
+    const user = User.create({
+      name,
+      email,
+      password: await this.passwordHasher.hash(password),
+    })
 
     await this.userRepository.save(user)
 
