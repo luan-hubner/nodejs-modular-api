@@ -3,15 +3,27 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start:dev": "tsx watch src/server.ts"
+    "start:dev": "tsx watch src/server.ts",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
+    "jest": "^30.3.0",
     "prettier": "^3.8.3",
+    "ts-jest": "^29.4.9",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   },

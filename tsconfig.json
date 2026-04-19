@@ -31,6 +31,10 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "baseUrl": "./",
+    "types": [
+      "jest",
+      "node"
+    ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
   },
