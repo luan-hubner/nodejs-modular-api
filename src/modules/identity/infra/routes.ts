@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify'
 import type { IEventBus } from '../../../shared/event-bus'
 import { IdentityController } from './identity.controller'
 import { RegisterUserUseCase } from '../application/use-cases/register-user.use-case'
+import { GetMeUseCase } from '../application/use-cases/get-me.use-case'
+import { LoginUseCase } from '../application/use-cases/login.use-case'
 import { PrismaUserRepository } from './prisma-user.repository'
 import { Argon2PasswordHasher } from './argon2-password-hasher'
 
@@ -16,10 +18,25 @@ export async function identityRoutes(
     options.eventBus,
     passwordHasher,
   )
-  const controller = new IdentityController(registerUserUseCase)
+  const getMeUseCase = new GetMeUseCase(userRepository)
+  const loginUseCase = new LoginUseCase(userRepository, passwordHasher)
+  const controller = new IdentityController(
+    registerUserUseCase,
+    getMeUseCase,
+    loginUseCase,
+  )
 
   fastify.post<{ Body: { name: string; email: string; password: string } }>(
     '/register',
     (request, reply) => controller.register(request, reply),
+  )
+
+  fastify.post<{ Body: { email: string; password: string } }>(
+    '/login',
+    (request, reply) => controller.signIn(request, reply),
+  )
+
+  fastify.get('/me', { preHandler: [fastify.authenticate] }, (request, reply) =>
+    controller.me(request, reply),
   )
 }
