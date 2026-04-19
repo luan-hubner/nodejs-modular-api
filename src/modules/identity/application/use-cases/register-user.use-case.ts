@@ -1,4 +1,6 @@
+import type { IEventBus } from '../../../../shared/event-bus'
 import { User } from '../../domain/entities/user.entity'
+import { UserRegisteredEvent } from '../../domain/events/user-registered.event'
 import { UserRepository } from '../../domain/repositories/user.repository'
 
 interface RegisterUserInput {
@@ -12,7 +14,10 @@ interface RegisterUserOutput {
 }
 
 export class RegisterUserUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly eventBus: IEventBus,
+  ) {}
 
   async execute({
     name,
@@ -28,6 +33,14 @@ export class RegisterUserUseCase {
     const user = User.create({ name, email, password })
 
     await this.userRepository.save(user)
+
+    await this.eventBus.publish(
+      new UserRegisteredEvent({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+      }),
+    )
 
     return { user: user.toJSON() }
   }
