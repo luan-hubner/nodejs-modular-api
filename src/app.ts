@@ -3,6 +3,7 @@ import fastifyJwt from '@fastify/jwt'
 import { InMemoryEventBus } from 'src/shared/event-bus'
 import { identityModule } from 'src/modules/identity'
 import { notificationModule } from 'src/modules/notification'
+import { catalogModule } from 'src/modules/catalog'
 
 const app = Fastify()
 
@@ -26,5 +27,6 @@ app.decorate(
 )
 
 app.register(identityModule, { eventBus })
+app.register(catalogModule, { eventBus })
 
 export default app
