@@ -16,3 +16,26 @@ model user {
 
   @@map("users")
 }
+
+model catalog_category {
+  id        String            @id
+  name      String            @unique
+  createdAt DateTime          @default(now()) @map("created_at")
+  products  catalog_product[]
+
+  @@map("catalog_categories")
+}
+
+model catalog_product {
+  id          String           @id
+  name        String
+  description String?
+  price       Decimal          @db.Decimal(10, 2)
+  stock       Int              @default(0)
+  categoryId  String           @map("category_id")
+  category    catalog_category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@map("catalog_products")
+}
