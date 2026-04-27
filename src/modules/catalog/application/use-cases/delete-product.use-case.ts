@@ -1,4 +1,5 @@
 import { ProductRepository } from '../../domain/repositories/product.repository'
+import { NotFoundError } from '../../../../shared/errors/app-error'
 
 export class DeleteProductUseCase {
   constructor(private readonly productRepository: ProductRepository) {}
@@ -7,7 +8,7 @@ export class DeleteProductUseCase {
     const existing = await this.productRepository.findById(id)
 
     if (!existing) {
-      throw new Error('Product not found')
+      throw new NotFoundError('Product not found')
     }
 
     await this.productRepository.delete(id)

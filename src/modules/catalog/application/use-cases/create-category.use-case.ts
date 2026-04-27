@@ -1,5 +1,6 @@
 import { Category } from '../../domain/entities/category.entity'
 import { CategoryRepository } from '../../domain/repositories/category.repository'
+import { ConflictError } from '../../../../shared/errors/app-error'
 
 interface CreateCategoryInput {
   name: string
@@ -16,7 +17,7 @@ export class CreateCategoryUseCase {
     const existing = await this.categoryRepository.findByName(name)
 
     if (existing) {
-      throw new Error('Category already exists')
+      throw new ConflictError('Category already exists')
     }
 
     const category = Category.create({ name })

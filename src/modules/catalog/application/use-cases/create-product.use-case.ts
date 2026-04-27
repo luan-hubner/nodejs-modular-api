@@ -1,4 +1,5 @@
 import type { IEventBus } from '../../../../shared/event-bus'
+import { NotFoundError } from '../../../../shared/errors/app-error'
 import { Product } from '../../domain/entities/product.entity'
 import { ProductCreatedEvent } from '../../domain/events/product-created.event'
 import { CategoryRepository } from '../../domain/repositories/category.repository'
@@ -27,7 +28,7 @@ export class CreateProductUseCase {
     const category = await this.categoryRepository.findById(input.categoryId)
 
     if (!category) {
-      throw new Error('Category not found')
+      throw new NotFoundError('Category not found')
     }
 
     const product = Product.create(input)

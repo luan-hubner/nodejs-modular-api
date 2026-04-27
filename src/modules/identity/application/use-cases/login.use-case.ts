@@ -1,5 +1,6 @@
 import { UserRepository } from '../../domain/repositories/user.repository'
 import type { PasswordHasher } from '../../domain/password-hasher'
+import { UnauthorizedError } from '../../../../shared/errors/app-error'
 
 interface LoginInput {
   email: string
@@ -20,13 +21,13 @@ export class LoginUseCase {
     const user = await this.userRepository.findByEmail(email)
 
     if (!user) {
-      throw new Error('Invalid credentials')
+      throw new UnauthorizedError('Invalid credentials')
     }
 
     const isValid = await this.passwordHasher.verify(password, user.password)
 
     if (!isValid) {
-      throw new Error('Invalid credentials')
+      throw new UnauthorizedError('Invalid credentials')
     }
 
     return { userId: user.id }

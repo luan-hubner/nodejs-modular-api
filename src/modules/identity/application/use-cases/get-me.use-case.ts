@@ -1,5 +1,6 @@
 import { User } from '../../domain/entities/user.entity'
 import { UserRepository } from '../../domain/repositories/user.repository'
+import { NotFoundError } from '../../../../shared/errors/app-error'
 
 interface GetMeOutput {
   user: ReturnType<User['toJSON']>
@@ -12,7 +13,7 @@ export class GetMeUseCase {
     const user = await this.userRepository.findById(userId)
 
     if (!user) {
-      throw new Error('User not found')
+      throw new NotFoundError('User not found')
     }
 
     return { user: user.toJSON() }

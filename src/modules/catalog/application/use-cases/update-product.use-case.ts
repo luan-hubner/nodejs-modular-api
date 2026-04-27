@@ -1,4 +1,5 @@
 import type { IEventBus } from '../../../../shared/event-bus'
+import { NotFoundError } from '../../../../shared/errors/app-error'
 import { ProductStockUpdatedEvent } from '../../domain/events/product-stock-updated.event'
 import { ProductRepository } from '../../domain/repositories/product.repository'
 import { Product } from '../../domain/entities/product.entity'
@@ -29,7 +30,7 @@ export class UpdateProductUseCase {
     const existing = await this.productRepository.findById(id)
 
     if (!existing) {
-      throw new Error('Product not found')
+      throw new NotFoundError('Product not found')
     }
 
     const stockChanged =

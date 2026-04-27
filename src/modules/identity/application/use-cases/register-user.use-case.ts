@@ -1,4 +1,5 @@
 import type { IEventBus } from '../../../../shared/event-bus'
+import { ConflictError } from '../../../../shared/errors/app-error'
 import { User } from '../../domain/entities/user.entity'
 import { UserRegisteredEvent } from '../../domain/events/user-registered.event'
 import { UserRepository } from '../../domain/repositories/user.repository'
@@ -29,7 +30,7 @@ export class RegisterUserUseCase {
     const existingUser = await this.userRepository.findByEmail(email)
 
     if (existingUser) {
-      throw new Error('Email already in use')
+      throw new ConflictError('Email already in use')
     }
 
     const user = User.create({

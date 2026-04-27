@@ -1,4 +1,8 @@
 import type { IEventBus } from '../../../../shared/event-bus'
+import {
+  NotFoundError,
+  ForbiddenError,
+} from '../../../../shared/errors/app-error'
 import { Order } from '../../domain/entities/order.entity'
 import { OrderCancelledEvent } from '../../domain/events/order-cancelled.event'
 import { OrderRepository } from '../../domain/repositories/order.repository'
@@ -22,11 +26,11 @@ export class CancelOrderUseCase {
     const order = await this.orderRepository.findById(input.orderId)
 
     if (!order) {
-      throw new Error('Order not found')
+      throw new NotFoundError('Order not found')
     }
 
     if (order.userId !== input.userId) {
-      throw new Error('Forbidden: order does not belong to user')
+      throw new ForbiddenError('Forbidden: order does not belong to user')
     }
 
     const cancelled = order.cancel()
