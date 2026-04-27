@@ -5,6 +5,11 @@ import { PlaceOrderUseCase } from '../application/use-cases/place-order.use-case
 import { CancelOrderUseCase } from '../application/use-cases/cancel-order.use-case'
 import { GetOrderHistoryUseCase } from '../application/use-cases/get-order-history.use-case'
 import { OrdersController } from './orders.controller'
+import {
+  validateBody,
+  validateParams,
+} from '../../../shared/middleware/validate'
+import { placeOrderBodySchema, orderParamsSchema } from './orders.schemas'
 
 export async function ordersRoutes(
   fastify: FastifyInstance,
@@ -30,13 +35,15 @@ export async function ordersRoutes(
 
   fastify.post<{
     Body: { items: { productId: string; quantity: number }[] }
-  }>('/', { preHandler: [fastify.authenticate] }, (req, reply) =>
-    controller.handlePlaceOrder(req, reply),
+  }>(
+    '/',
+    { preHandler: [fastify.authenticate, validateBody(placeOrderBodySchema)] },
+    (req, reply) => controller.handlePlaceOrder(req, reply),
   )
 
   fastify.patch<{ Params: { id: string } }>(
     '/:id/cancel',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate, validateParams(orderParamsSchema)] },
     (req, reply) => controller.handleCancelOrder(req, reply),
   )
 
