@@ -39,3 +39,31 @@ model catalog_product {
 
   @@map("catalog_products")
 }
+
+enum order_status {
+  PENDING
+  CANCELLED
+  COMPLETED
+}
+
+model order {
+  id        String       @id
+  userId    String       @map("user_id")
+  status    order_status @default(PENDING)
+  items     order_item[]
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+model order_item {
+  id        String  @id
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  quantity  Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+  order     order   @relation(fields: [orderId], references: [id])
+
+  @@map("order_items")
+}
