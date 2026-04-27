@@ -9,6 +9,16 @@ import { CreateProductUseCase } from '../application/use-cases/create-product.us
 import { UpdateProductUseCase } from '../application/use-cases/update-product.use-case'
 import { DeleteProductUseCase } from '../application/use-cases/delete-product.use-case'
 import { ListProductsUseCase } from '../application/use-cases/list-products.use-case'
+import {
+  validateBody,
+  validateParams,
+} from '../../../shared/middleware/validate'
+import {
+  createCategoryBodySchema,
+  createProductBodySchema,
+  updateProductBodySchema,
+  productParamsSchema,
+} from './catalog.schemas'
 
 export async function catalogRoutes(
   fastify: FastifyInstance,
@@ -43,7 +53,12 @@ export async function catalogRoutes(
   // Categories
   fastify.post<{ Body: { name: string } }>(
     '/categories',
-    { preHandler: [fastify.authenticate] },
+    {
+      preHandler: [
+        fastify.authenticate,
+        validateBody(createCategoryBodySchema),
+      ],
+    },
     (req, reply) => controller.handleCreateCategory(req, reply),
   )
 
@@ -60,8 +75,12 @@ export async function catalogRoutes(
       stock?: number
       categoryId: string
     }
-  }>('/products', { preHandler: [fastify.authenticate] }, (req, reply) =>
-    controller.handleCreateProduct(req, reply),
+  }>(
+    '/products',
+    {
+      preHandler: [fastify.authenticate, validateBody(createProductBodySchema)],
+    },
+    (req, reply) => controller.handleCreateProduct(req, reply),
   )
 
   fastify.put<{
@@ -73,13 +92,21 @@ export async function catalogRoutes(
       stock?: number
       categoryId?: string
     }
-  }>('/products/:id', { preHandler: [fastify.authenticate] }, (req, reply) =>
-    controller.handleUpdateProduct(req, reply),
+  }>(
+    '/products/:id',
+    {
+      preHandler: [
+        fastify.authenticate,
+        validateParams(productParamsSchema),
+        validateBody(updateProductBodySchema),
+      ],
+    },
+    (req, reply) => controller.handleUpdateProduct(req, reply),
   )
 
   fastify.delete<{ Params: { id: string } }>(
     '/products/:id',
-    { preHandler: [fastify.authenticate] },
+    { preHandler: [fastify.authenticate, validateParams(productParamsSchema)] },
     (req, reply) => controller.handleDeleteProduct(req, reply),
   )
 
