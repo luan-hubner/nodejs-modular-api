@@ -3,9 +3,9 @@ import app from './app'
 
 app.listen({ port: 3333 }, (err, address) => {
   if (err) {
-    console.error(err)
+    app.log.error(err)
     process.exit(1)
   }
 
-  console.log(`server running at ${address}`)
+  app.log.info(`server running at ${address}`)
 })

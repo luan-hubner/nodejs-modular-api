@@ -7,7 +7,23 @@ import { catalogModule } from 'src/modules/catalog'
 import { ordersModule } from 'src/modules/orders'
 import { errorHandler } from 'src/shared/middleware/error-handler'
 
-const app = Fastify()
+const isDev = process.env.NODE_ENV !== 'production'
+
+const app = Fastify({
+  logger: {
+    level: process.env.LOG_LEVEL ?? 'info',
+    ...(isDev && {
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          ignore: 'pid,hostname',
+        },
+      },
+    }),
+  },
+})
 
 const eventBus = new InMemoryEventBus()
 
