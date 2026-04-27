@@ -6,6 +6,8 @@ import { GetMeUseCase } from '../application/use-cases/get-me.use-case'
 import { LoginUseCase } from '../application/use-cases/login.use-case'
 import { PrismaUserRepository } from './prisma-user.repository'
 import { Argon2PasswordHasher } from './argon2-password-hasher'
+import { validateBody } from '../../../shared/middleware/validate'
+import { registerBodySchema, loginBodySchema } from './identity.schemas'
 
 export async function identityRoutes(
   fastify: FastifyInstance,
@@ -28,11 +30,13 @@ export async function identityRoutes(
 
   fastify.post<{ Body: { name: string; email: string; password: string } }>(
     '/register',
+    { preHandler: [validateBody(registerBodySchema)] },
     (request, reply) => controller.register(request, reply),
   )
 
   fastify.post<{ Body: { email: string; password: string } }>(
     '/login',
+    { preHandler: [validateBody(loginBodySchema)] },
     (request, reply) => controller.signIn(request, reply),
   )
 
