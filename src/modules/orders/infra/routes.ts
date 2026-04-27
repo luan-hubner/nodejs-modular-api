@@ -1,0 +1,46 @@
+import { FastifyInstance } from 'fastify'
+import type { IEventBus } from '../../../shared/event-bus'
+import { PrismaOrderRepository } from './prisma-order.repository'
+import { PlaceOrderUseCase } from '../application/use-cases/place-order.use-case'
+import { CancelOrderUseCase } from '../application/use-cases/cancel-order.use-case'
+import { GetOrderHistoryUseCase } from '../application/use-cases/get-order-history.use-case'
+import { OrdersController } from './orders.controller'
+
+export async function ordersRoutes(
+  fastify: FastifyInstance,
+  options: { eventBus: IEventBus },
+) {
+  const orderRepository = new PrismaOrderRepository()
+
+  const placeOrderUseCase = new PlaceOrderUseCase(
+    orderRepository,
+    options.eventBus,
+  )
+  const cancelOrderUseCase = new CancelOrderUseCase(
+    orderRepository,
+    options.eventBus,
+  )
+  const getOrderHistoryUseCase = new GetOrderHistoryUseCase(orderRepository)
+
+  const controller = new OrdersController(
+    placeOrderUseCase,
+    cancelOrderUseCase,
+    getOrderHistoryUseCase,
+  )
+
+  fastify.post<{
+    Body: { items: { productId: string; quantity: number }[] }
+  }>('/', { preHandler: [fastify.authenticate] }, (req, reply) =>
+    controller.handlePlaceOrder(req, reply),
+  )
+
+  fastify.patch<{ Params: { id: string } }>(
+    '/:id/cancel',
+    { preHandler: [fastify.authenticate] },
+    (req, reply) => controller.handleCancelOrder(req, reply),
+  )
+
+  fastify.get('/', { preHandler: [fastify.authenticate] }, (req, reply) =>
+    controller.handleGetOrderHistory(req, reply),
+  )
+}
