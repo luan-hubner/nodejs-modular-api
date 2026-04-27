@@ -4,6 +4,7 @@ import { InMemoryEventBus } from 'src/shared/event-bus'
 import { identityModule } from 'src/modules/identity'
 import { notificationModule } from 'src/modules/notification'
 import { catalogModule } from 'src/modules/catalog'
+import { ordersModule } from 'src/modules/orders'
 
 const app = Fastify()
 
@@ -28,5 +29,6 @@ app.decorate(
 
 app.register(identityModule, { eventBus })
 app.register(catalogModule, { eventBus })
+app.register(ordersModule, { eventBus })
 
 export default app
