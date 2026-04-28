@@ -67,3 +67,17 @@ model order_item {
 
   @@map("order_items")
 }
+
+model outbox_event {
+  id          String    @id @default(cuid())
+  eventName   String    @map("event_name")
+  payload     Json
+  occurredAt  DateTime  @map("occurred_at")
+  processedAt DateTime? @map("processed_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_events")
+}
