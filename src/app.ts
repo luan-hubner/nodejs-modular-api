@@ -1,6 +1,10 @@
 import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
 import fastifyJwt from '@fastify/jwt'
-import { InMemoryEventBus } from 'src/shared/event-bus'
+import {
+  InMemoryEventBus,
+  OutboxEventBus,
+  OutboxWorker,
+} from 'src/shared/event-bus'
 import { identityModule } from 'src/modules/identity'
 import { notificationModule } from 'src/modules/notification'
 import { catalogModule } from 'src/modules/catalog'
@@ -25,9 +29,16 @@ const app = Fastify({
   },
 })
 
-const eventBus = new InMemoryEventBus()
+const inMemoryBus = new InMemoryEventBus()
+const eventBus = new OutboxEventBus(inMemoryBus)
 
 notificationModule(eventBus)
+
+const outboxWorker = new OutboxWorker(inMemoryBus)
+outboxWorker.start()
+
+process.on('SIGTERM', () => outboxWorker.stop())
+process.on('SIGINT', () => outboxWorker.stop())
 
 app.register(fastifyJwt, {
   secret: process.env.JWT_SECRET as string,
