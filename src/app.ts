@@ -1,5 +1,7 @@
 import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
 import fastifyJwt from '@fastify/jwt'
+import fastifyHelmet from '@fastify/helmet'
+import fastifyRateLimit from '@fastify/rate-limit'
 import {
   InMemoryEventBus,
   OutboxEventBus,
@@ -39,6 +41,12 @@ outboxWorker.start()
 
 process.on('SIGTERM', () => outboxWorker.stop())
 process.on('SIGINT', () => outboxWorker.stop())
+
+app.register(fastifyHelmet)
+app.register(fastifyRateLimit, {
+  max: 100,
+  timeWindow: '1 minute',
+})
 
 app.register(fastifyJwt, {
   secret: process.env.JWT_SECRET as string,
