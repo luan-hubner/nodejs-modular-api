@@ -1,9 +1,16 @@
+import { randomUUID } from 'crypto'
 import type { IEventBus } from '../../../../shared/event-bus'
+import {
+  NotFoundError,
+  ValidationError,
+  AppError,
+} from '../../../../shared/errors'
 import { Order } from '../../domain/entities/order.entity'
 import { OrderItem } from '../../domain/entities/order-item.entity'
 import { OrderPlacedEvent } from '../../domain/events/order-placed.event'
 import { OrderRepository } from '../../domain/repositories/order.repository'
 import type { IProductQueryRepository } from '../../../catalog/domain/repositories/product-query.repository'
+import { createLogger } from '../../../../shared/lib/create-logger'
 
 interface PlaceOrderInput {
   userId: string
@@ -15,6 +22,8 @@ interface PlaceOrderOutput {
 }
 
 export class PlaceOrderUseCase {
+  private readonly logger = createLogger('PlaceOrderUseCase')
+
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly eventBus: IEventBus,
@@ -23,7 +32,7 @@ export class PlaceOrderUseCase {
 
   async execute(input: PlaceOrderInput): Promise<PlaceOrderOutput> {
     if (!input.items || input.items.length === 0) {
-      throw new Error('Order must have at least one item')
+      throw new ValidationError('Order must have at least one item')
     }
 
     const productIds = input.items.map((i) => i.productId)
@@ -31,7 +40,7 @@ export class PlaceOrderUseCase {
     const products = await this.productQueryRepository.findManyByIds(productIds)
 
     if (products.length !== productIds.length) {
-      throw new Error('One or more products not found')
+      throw new NotFoundError('One or more products not found')
     }
 
     const productMap = new Map(products.map((p) => [p.id, p]))
@@ -39,44 +48,42 @@ export class PlaceOrderUseCase {
     for (const item of input.items) {
       const product = productMap.get(item.productId)!
       if (product.stock < item.quantity) {
-        throw new Error(
+        throw new AppError(
           `Insufficient stock for product "${product.name}". Available: ${product.stock}`,
+          409,
+          'INSUFFICIENT_STOCK',
         )
       }
     }
 
-    const orderItems = input.items.map((item) => {
+    const orderId = randomUUID()
+
+    const finalItems = input.items.map((item) => {
       const product = productMap.get(item.productId)!
       return OrderItem.create({
-        orderId: '', // will be set below
+        orderId,
         productId: item.productId,
         quantity: item.quantity,
         unitPrice: product.price,
       })
     })
 
-    const order = Order.create({ userId: input.userId, items: [] })
-
-    // Recreate items with the real orderId
-    const finalItems = orderItems.map((item) =>
-      OrderItem.create({
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      }),
-    )
-
+    const now = new Date()
     const finalOrder = Order.restore({
-      id: order.id,
-      userId: order.userId,
-      status: order.status,
+      id: orderId,
+      userId: input.userId,
+      status: 'PENDING',
       items: finalItems,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
+      createdAt: now,
+      updatedAt: now,
     })
 
     await this.orderRepository.save(finalOrder)
+
+    this.logger.info(
+      { orderId: finalOrder.id, userId: finalOrder.userId },
+      'Order placed successfully',
+    )
 
     await this.eventBus.publish(
       new OrderPlacedEvent({

@@ -31,14 +31,13 @@ class InMemoryOrderRepository implements OrderRepository {
 }
 
 function makeOrderWithItems(userId: string): Order {
-  const order = Order.create({ userId, items: [] })
   const item = OrderItem.create({
-    orderId: order.id,
+    orderId: 'order-temp',
     productId: 'prod-1',
     quantity: 2,
     unitPrice: 100,
   })
-  return Order.restore({ ...order, items: [item] })
+  return Order.create({ userId, items: [item] })
 }
 
 describe('GetOrderHistoryUseCase', () => {

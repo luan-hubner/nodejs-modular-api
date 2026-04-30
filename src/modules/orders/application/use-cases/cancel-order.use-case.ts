@@ -6,6 +6,7 @@ import {
 import { Order } from '../../domain/entities/order.entity'
 import { OrderCancelledEvent } from '../../domain/events/order-cancelled.event'
 import { OrderRepository } from '../../domain/repositories/order.repository'
+import { createLogger } from '../../../../shared/lib/create-logger'
 
 interface CancelOrderInput {
   orderId: string
@@ -17,6 +18,8 @@ interface CancelOrderOutput {
 }
 
 export class CancelOrderUseCase {
+  private readonly logger = createLogger('CancelOrderUseCase')
+
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly eventBus: IEventBus,
@@ -36,6 +39,11 @@ export class CancelOrderUseCase {
     const cancelled = order.cancel()
 
     await this.orderRepository.update(cancelled)
+
+    this.logger.info(
+      { orderId: cancelled.id, userId: cancelled.userId },
+      'Order cancelled successfully',
+    )
 
     await this.eventBus.publish(
       new OrderCancelledEvent({
