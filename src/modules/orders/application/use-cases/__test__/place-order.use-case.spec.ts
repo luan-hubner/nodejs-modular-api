@@ -6,19 +6,18 @@ import {
   EventHandler,
   DomainEvent,
 } from '../../../../../shared/event-bus'
+import type {
+  IProductQueryRepository,
+  ProductQueryData,
+} from '../../../../catalog/domain/repositories/product-query.repository'
 
-// Mock the shared prisma client so the use-case does not need a real database
-jest.mock('../../../../../shared/lib/prisma', () => ({
-  prisma: {
-    catalog_product: {
-      findMany: jest.fn(),
-    },
-  },
-}))
+class InMemoryProductQueryRepository implements IProductQueryRepository {
+  constructor(private readonly products: ProductQueryData[] = []) {}
 
-import { prisma } from '../../../../../shared/lib/prisma'
-
-const mockFindMany = prisma.catalog_product.findMany as jest.Mock
+  async findManyByIds(ids: string[]): Promise<ProductQueryData[]> {
+    return this.products.filter((p) => ids.includes(p.id))
+  }
+}
 
 class InMemoryOrderRepository implements OrderRepository {
   public orders: Order[] = []
@@ -58,27 +57,35 @@ class FakeEventBus implements IEventBus {
   unsubscribe(_eventName: string, _handler: EventHandler): void {}
 }
 
-const fakeProduct = (id: string, stock = 100, price = 50) => ({
+const fakeProduct = (
+  id: string,
+  stock = 100,
+  price = 50,
+): ProductQueryData => ({
   id,
   name: `Product ${id}`,
   stock,
-  price: { toNumber: () => price },
+  price,
 })
 
 describe('PlaceOrderUseCase', () => {
   let orderRepository: InMemoryOrderRepository
   let eventBus: FakeEventBus
-  let sut: PlaceOrderUseCase
+
+  const makeSut = (...products: ProductQueryData[]) =>
+    new PlaceOrderUseCase(
+      orderRepository,
+      eventBus,
+      new InMemoryProductQueryRepository(products),
+    )
 
   beforeEach(() => {
     orderRepository = new InMemoryOrderRepository()
     eventBus = new FakeEventBus()
-    sut = new PlaceOrderUseCase(orderRepository, eventBus)
-    jest.clearAllMocks()
   })
 
   it('should place an order with valid items', async () => {
-    mockFindMany.mockResolvedValueOnce([fakeProduct('prod-1')])
+    const sut = makeSut(fakeProduct('prod-1'))
 
     const { order } = await sut.execute({
       userId: 'user-1',
@@ -92,7 +99,7 @@ describe('PlaceOrderUseCase', () => {
   })
 
   it('should persist the order in the repository', async () => {
-    mockFindMany.mockResolvedValueOnce([fakeProduct('prod-1')])
+    const sut = makeSut(fakeProduct('prod-1'))
 
     const { order } = await sut.execute({
       userId: 'user-1',
@@ -104,13 +111,15 @@ describe('PlaceOrderUseCase', () => {
   })
 
   it('should throw if no items are provided', async () => {
+    const sut = makeSut()
+
     await expect(sut.execute({ userId: 'user-1', items: [] })).rejects.toThrow(
       'Order must have at least one item',
     )
   })
 
   it('should throw if a product is not found', async () => {
-    mockFindMany.mockResolvedValueOnce([]) // no products returned
+    const sut = makeSut() // no products in repository
 
     await expect(
       sut.execute({
@@ -121,7 +130,7 @@ describe('PlaceOrderUseCase', () => {
   })
 
   it('should throw if a product has insufficient stock', async () => {
-    mockFindMany.mockResolvedValueOnce([fakeProduct('prod-1', 3)])
+    const sut = makeSut(fakeProduct('prod-1', 3))
 
     await expect(
       sut.execute({
@@ -132,7 +141,7 @@ describe('PlaceOrderUseCase', () => {
   })
 
   it('should publish an OrderPlacedEvent after placing the order', async () => {
-    mockFindMany.mockResolvedValueOnce([fakeProduct('prod-1')])
+    const sut = makeSut(fakeProduct('prod-1'))
 
     await sut.execute({
       userId: 'user-1',
@@ -144,7 +153,7 @@ describe('PlaceOrderUseCase', () => {
   })
 
   it('should calculate the correct total', async () => {
-    mockFindMany.mockResolvedValueOnce([fakeProduct('prod-1', 100, 75)])
+    const sut = makeSut(fakeProduct('prod-1', 100, 75))
 
     const { order } = await sut.execute({
       userId: 'user-1',

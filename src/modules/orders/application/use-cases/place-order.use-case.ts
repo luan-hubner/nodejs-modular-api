@@ -3,7 +3,7 @@ import { Order } from '../../domain/entities/order.entity'
 import { OrderItem } from '../../domain/entities/order-item.entity'
 import { OrderPlacedEvent } from '../../domain/events/order-placed.event'
 import { OrderRepository } from '../../domain/repositories/order.repository'
-import { prisma } from '../../../../shared/lib/prisma'
+import type { IProductQueryRepository } from '../../../catalog/domain/repositories/product-query.repository'
 
 interface PlaceOrderInput {
   userId: string
@@ -18,6 +18,7 @@ export class PlaceOrderUseCase {
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly eventBus: IEventBus,
+    private readonly productQueryRepository: IProductQueryRepository,
   ) {}
 
   async execute(input: PlaceOrderInput): Promise<PlaceOrderOutput> {
@@ -27,10 +28,7 @@ export class PlaceOrderUseCase {
 
     const productIds = input.items.map((i) => i.productId)
 
-    // Direct query — does not import the Catalog module
-    const products = await prisma.catalog_product.findMany({
-      where: { id: { in: productIds } },
-    })
+    const products = await this.productQueryRepository.findManyByIds(productIds)
 
     if (products.length !== productIds.length) {
       throw new Error('One or more products not found')
@@ -53,7 +51,7 @@ export class PlaceOrderUseCase {
         orderId: '', // will be set below
         productId: item.productId,
         quantity: item.quantity,
-        unitPrice: product.price.toNumber(),
+        unitPrice: product.price,
       })
     })
 

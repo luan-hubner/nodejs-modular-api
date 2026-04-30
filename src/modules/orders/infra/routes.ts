@@ -10,16 +10,19 @@ import {
   validateParams,
 } from '../../../shared/middleware/validate'
 import { placeOrderBodySchema, orderParamsSchema } from './orders.schemas'
+import { PrismaProductQueryRepository } from '../../catalog/infra/prisma-product-query.repository'
 
 export async function ordersRoutes(
   fastify: FastifyInstance,
   options: { eventBus: IEventBus },
 ) {
   const orderRepository = new PrismaOrderRepository()
+  const productQueryRepository = new PrismaProductQueryRepository()
 
   const placeOrderUseCase = new PlaceOrderUseCase(
     orderRepository,
     options.eventBus,
+    productQueryRepository,
   )
   const cancelOrderUseCase = new CancelOrderUseCase(
     orderRepository,
