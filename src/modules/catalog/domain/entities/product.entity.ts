@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto'
+import { ValidationError } from '../../../../shared/errors'
 
 interface ProductProps {
   id: string
@@ -47,6 +48,18 @@ export class Product {
     stock,
     categoryId,
   }: CreateProductDTO): Product {
+    if (!name || name.trim().length === 0) {
+      throw new ValidationError('Product name is required')
+    }
+    if (price <= 0) {
+      throw new ValidationError('Product price must be greater than 0')
+    }
+    if (stock !== undefined && stock < 0) {
+      throw new ValidationError('Product stock cannot be negative')
+    }
+    if (!categoryId || categoryId.trim().length === 0) {
+      throw new ValidationError('Product categoryId is required')
+    }
     const now = new Date()
     return new Product({
       id: randomUUID(),

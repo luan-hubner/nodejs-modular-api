@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto'
+import { ValidationError } from '../../../../shared/errors'
 
 interface OrderItemProps {
   id: string
@@ -31,6 +32,12 @@ export class OrderItem {
   }
 
   static create(dto: CreateOrderItemDTO): OrderItem {
+    if (dto.quantity <= 0) {
+      throw new ValidationError('OrderItem quantity must be greater than 0')
+    }
+    if (dto.unitPrice <= 0) {
+      throw new ValidationError('OrderItem unitPrice must be greater than 0')
+    }
     return new OrderItem({ id: randomUUID(), ...dto })
   }
 

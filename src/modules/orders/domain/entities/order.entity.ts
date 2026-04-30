@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import { OrderItem } from './order-item.entity'
+import { ValidationError, ForbiddenError } from '../../../../shared/errors'
 
 export type OrderStatus = 'PENDING' | 'CANCELLED' | 'COMPLETED'
 
@@ -35,6 +36,12 @@ export class Order {
   }
 
   static create(dto: CreateOrderDTO): Order {
+    if (!dto.userId || dto.userId.trim().length === 0) {
+      throw new ValidationError('Order userId is required')
+    }
+    if (!dto.items || dto.items.length === 0) {
+      throw new ValidationError('Order must have at least one item')
+    }
     const now = new Date()
     return new Order({
       id: randomUUID(),
@@ -52,7 +59,7 @@ export class Order {
 
   cancel(): Order {
     if (this.status !== 'PENDING') {
-      throw new Error('Only PENDING orders can be cancelled')
+      throw new ForbiddenError('Only PENDING orders can be cancelled')
     }
     const now = new Date()
     return Order.restore({ ...this, status: 'CANCELLED', updatedAt: now })
