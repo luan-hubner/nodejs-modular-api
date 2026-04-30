@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify'
 import type { IEventBus } from '../../../shared/event-bus'
 import { PrismaOrderRepository } from './prisma-order.repository'
 import { PlaceOrderUseCase } from '../application/use-cases/place-order.use-case'
+import { PlaceOrderWithTransactionUseCase } from '../application/use-cases/place-order-with-transaction.use-case'
 import { CancelOrderUseCase } from '../application/use-cases/cancel-order.use-case'
 import { GetOrderHistoryUseCase } from '../application/use-cases/get-order-history.use-case'
 import { OrdersController } from './orders.controller'
@@ -19,7 +20,8 @@ export async function ordersRoutes(
   const orderRepository = new PrismaOrderRepository()
   const productQueryRepository = new PrismaProductQueryRepository()
 
-  const placeOrderUseCase = new PlaceOrderUseCase(
+  // Use the transactional variant so stock is decremented atomically.
+  const placeOrderUseCase = new PlaceOrderWithTransactionUseCase(
     orderRepository,
     options.eventBus,
     productQueryRepository,

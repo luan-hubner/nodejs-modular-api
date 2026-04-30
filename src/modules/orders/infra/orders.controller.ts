@@ -1,11 +1,17 @@
 import { FastifyReply, FastifyRequest } from 'fastify'
-import { PlaceOrderUseCase } from '../application/use-cases/place-order.use-case'
 import { CancelOrderUseCase } from '../application/use-cases/cancel-order.use-case'
 import { GetOrderHistoryUseCase } from '../application/use-cases/get-order-history.use-case'
 
+interface IPlaceOrderUseCase {
+  execute(input: {
+    userId: string
+    items: { productId: string; quantity: number }[]
+  }): Promise<{ order: Record<string, unknown> }>
+}
+
 export class OrdersController {
   constructor(
-    private readonly placeOrder: PlaceOrderUseCase,
+    private readonly placeOrder: IPlaceOrderUseCase,
     private readonly cancelOrder: CancelOrderUseCase,
     private readonly getOrderHistory: GetOrderHistoryUseCase,
   ) {}
